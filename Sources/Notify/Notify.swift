@@ -2,9 +2,8 @@
 typealias Event = String
 
 final class Notify {
-
     /**
-        The objects that are currently listening for notifications, grouped by Event.
+     Holds objects that are currently listening for notifications, grouped by Event.
      */
     private(set) public var activeObservers = [Event: [Observer]]()
 
@@ -17,6 +16,12 @@ final class Notify {
 
     // MARK: Public Methods
 
+    /**
+     Adds the class to the list of active observers.
+     - Parameter observer: The object that is listening for the notification. Typically `self`.
+     Must conform to the observer protocol.
+     - Parameter event: The event the object is listening for.
+     */
     public func addObserver(_ observer: Observer,
                                    for event: Event) {
         if var existingObservers = activeObservers[event] {
@@ -26,7 +31,11 @@ final class Notify {
             activeObservers[event] = [observer]
         }
     }
-    
+
+    /**
+     Posts a notification with a specificed event. All classes that are listening for the event will be notified.
+     - Parameter event: The event to post to all observers.
+     */
     public func postNotification(with event: Event) {
         // If there are no active observers for the posted
         // event, return immediately.
@@ -43,12 +52,3 @@ final class Notify {
 protocol Observer {
     func didRecieveNotification(event:Event)
 }
-
-
-/// Whenever a notification is posted, we want to
-/// either iterate through all of our observers to see if they match, and then notify.
-/// OR, we hold a Dictionary of [Event: [Observer]]
-
-
-/// Features:
-/// obversers are automatically removed on dealloc
