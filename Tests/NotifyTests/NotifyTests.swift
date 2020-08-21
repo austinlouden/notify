@@ -1,15 +1,41 @@
+import UIKit
 import XCTest
 @testable import Notify
 
 final class NotifyTests: XCTestCase {
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        XCTAssertEqual(Notify().text, "Hello, World!")
+    
+    class MockViewController: UIViewController, Observer {
+        var eventReceived = false
+        func didRecieveNotification(event: Event) {
+            eventReceived = true
+        }
     }
+    
+    override func setUp() {
+        super.setUp()
+    }
+    
+    override func tearDown() {
+        super.tearDown()
+    }
+    
+    func testAddObserver() {
+        let mockViewController = MockViewController()
+        let eventName = "Test"
+        let n = Notify.shared
+        
+        n.addObserver(mockViewController, for: eventName)
+    
+        XCTAssertNotNil(n.activeObservers[eventName])
+    }
+    
+    func testPostNotification() {
+        let mockViewController = MockViewController()
+        let n = Notify.shared
+        let eventName = "Test"
 
-    static var allTests = [
-        ("testExample", testExample),
-    ]
+        n.addObserver(mockViewController, for: eventName)
+        n.postNotification(with: eventName)
+        XCTAssert(mockViewController.eventReceived == true)
+    }
 }
