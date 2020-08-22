@@ -14,7 +14,7 @@ final class Notify {
     
     private init() {}
 
-    // MARK: Public Methods
+    // MARK: Public
 
     /**
      Adds the class to the list of active observers.
@@ -22,14 +22,15 @@ final class Notify {
      Must conform to the observer protocol.
      - Parameter event: The event the object is listening for.
      */
-    public func addObserver(_ observer: Observer,
-                                   for event: Event) {
-        if var existingObservers = activeObservers[event] {
-            existingObservers.append(observer)
-            activeObservers[event] = existingObservers
+    public func addObserver(_ observer: Observer, for event: Event) -> ObserverToken {
+        if var observers = observersForEvent(event)  {
+            observers.append(observer)
+            activeObservers[event] = observers
         } else {
             activeObservers[event] = [observer]
         }
+
+        return ObserverToken(observer: observer, event: event)
     }
 
     /**
@@ -37,9 +38,7 @@ final class Notify {
      - Parameter event: The event to post to all observers.
      */
     public func postNotification(with event: Event) {
-        // If there are no active observers for the posted
-        // event, return immediately.
-        guard let observers = activeObservers[event] else {
+        guard let observers = observersForEvent(event) else {
             return
         }
 
@@ -47,8 +46,51 @@ final class Notify {
             observer.didRecieveNotification(event: event)
         }
     }
+    
+    /**
+     Removes a notification observer. Note that observers are automatically removed upon deinit.
+     This means that classes must hold on to observation tokens outside of local scope to receive
+     notifications.
+     */
+    public func removeObserver(_ observer: Observer, for event: Event) {
+        guard var observers = observersForEvent(event) else {
+            return
+        }
+
+        observers.removeAll { $0 === observer }
+        
+        if observers.isEmpty {
+            activeObservers.removeValue(forKey: event)
+        } else {
+            activeObservers[event] = observers
+        }
+    }
+    
+    // MARK: Private
+    
+    private func observersForEvent(_ e: Event) -> [Observer]? {
+        if let observers = activeObservers[e], observers.count > 0 {
+            return observers
+        }
+
+        return nil
+    }
 }
 
-protocol Observer {
+final class ObserverToken {
+    let observer: Observer
+    let event: Event
+    
+    init(observer: Observer, event: Event) {
+        self.observer = observer
+        self.event = event
+    }
+
+    deinit {
+        Notify.shared.removeObserver(observer, for: event)
+    }
+}
+
+protocol Observer: AnyObject {
     func didRecieveNotification(event:Event)
 }
